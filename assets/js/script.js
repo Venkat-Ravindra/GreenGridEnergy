@@ -1,6 +1,9 @@
 // ─── CONFIG ───────────────────────────────────────────────
-    const FORMSPREE_ID = "mzdjpdpb";
-    // ──────────────────────────────────────────────────────────
+
+    // ─── CONFIG ───────────────────────────────────────────────
+    const EMAILJS_SERVICE_ID  = "service_f32avtm";   // e.g. "service_xxxxxxx"
+    const EMAILJS_TEMPLATE_ID = "template_8lmdzja";  // e.g. "template_xxxxxxx"
+    const EMAILJS_PUBLIC_KEY  = "BUFtI5ZyWy5vA-9ZA";   // e.g. "xxxxxxxxxxxxxxxxxxxx"
 
     // ─── THEME TOGGLE ─────────────────────────────────────────
     const themeToggle = document.getElementById('theme-toggle');
@@ -9,10 +12,10 @@
  function applyTheme(mode) {
   if (mode === 'light') {
     document.documentElement.classList.add('light');
-    themeIcon.innerHTML = '<img src="dark-mode.png" width="25" height="25" alt="Switch to dark mode" />';
+    themeIcon.innerHTML = '<img src="assets/images/dark-mode.png" width="25" height="25" alt="Switch to dark mode" />';
   } else {
     document.documentElement.classList.remove('light');
-    themeIcon.innerHTML = '<img src="light-mode.png" width="40" height="40" alt="Switch to light mode" />';
+    themeIcon.innerHTML = '<img src="assets/images/light-mode.png" width="40" height="40" alt="Switch to light mode" />';
   }
   localStorage.setItem('gg-theme', mode);
 }
@@ -169,6 +172,7 @@
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                       showError('email',   'Enter a valid email');      hasError = true; }
       if (!phone)   { showError('phone',   'Phone is required');       hasError = true; }
+      else if(phone.length < 10) { showError('phone', 'Phone must be 10 digits'); hasError = true; }
       if (!message) { showError('message', 'Message is required');     hasError = true; }
       if (hasError) return;
 
@@ -177,20 +181,23 @@
       btn.innerHTML = '<span class="spinner"></span>Sending…';
 
       try {
-        const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body:    JSON.stringify({ name, email, phone, subject, message })
-        });
-        if (res.ok) {
-          document.getElementById('contact-form').style.display = 'none';
-          document.getElementById('success-card').style.display  = 'block';
-        } else {
-          document.getElementById('form-error').style.display = 'block';
-          btn.disabled  = false;
-          btn.innerHTML = 'Send Message ✉️';
-        }
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          {
+            from_name:    name,
+            from_email:   email,
+            from_phone:   phone,
+            subject:      subject || 'New enquiry from GreenGrid website',
+            message:      message,
+            reply_to:     email
+          },
+          EMAILJS_PUBLIC_KEY
+        );
+        document.getElementById('contact-form').style.display = 'none';
+        document.getElementById('success-card').style.display  = 'block';
       } catch {
+        console.error('EmailJS error:', err);
         document.getElementById('form-error').style.display = 'block';
         btn.disabled  = false;
         btn.innerHTML = 'Send Message ✉️';
@@ -205,7 +212,9 @@
       clearErrors();
       document.getElementById('success-card').style.display  = 'none';
       document.getElementById('contact-form').style.display  = 'flex';
-      document.getElementById('submit-btn').innerHTML = 'Send Message ✉️';
+      const btn = document.getElementById('submit-btn');
+      btn.innerHTML = 'Send Message ✉️';
+      btn.disabled = false;
     }
 
     /* ─── CAROUSEL ─────────────────────────────────────────── */
